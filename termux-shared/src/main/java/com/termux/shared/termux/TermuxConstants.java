@@ -11,6 +11,10 @@ import java.util.Arrays;
 import java.util.Formatter;
 import java.util.List;
 
+import com.termux.shared.android.PackageUtils;
+import android.os.Build;
+import android.content.Context;
+import com.termux.shared.termux.ContextUtils;
 /*
  * Version: v0.53.0
  * SPDX-License-Identifier: MIT
@@ -350,6 +354,25 @@ public final class TermuxConstants {
     public static final String TERMUX_APP_NAME = "Termux"; // Default: "Termux"
     /** Termux package name */
     public static final String TERMUX_PACKAGE_NAME = "com.termux"; // Default: "com.termux"
+
+    //多用户数据目录前缀
+    private static final String TERMUX_DATA_PREFIX = getTermuxDataPrefix();
+    
+    private static String getTermuxDataPrefix() {
+        try {
+            Context applicationContext = ContextUtils.getApplicationContext();
+            if (applicationContext != null) {
+                Long userId = PackageUtils.getUserIdForPackage(applicationContext);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && (userId != null && userId != 0)) {
+                    // 多用户环境，动态获取数据目录
+                    return applicationContext.getFilesDir().getParentFile().getParent() + "/";
+                }
+            }
+        } catch (Throwable e) {
+            // 如果获取失败，fallback 到默认路径
+        }
+        return "/data/data/";
+    }
     /** Termux GitHub repo name */
     public static final String TERMUX_GITHUB_REPO_NAME = "termux-app"; // Default: "termux-app"
     /** Termux GitHub repo url */
@@ -578,8 +601,30 @@ public final class TermuxConstants {
 
     /** Termux app internal private app data directory path */
     @SuppressLint("SdCardPath")
-    public static final String TERMUX_INTERNAL_PRIVATE_APP_DATA_DIR_PATH = "/data/data/" + TERMUX_PACKAGE_NAME; // Default: "/data/data/com.termux"
+    // 不使用静态版本
+    //public static final String TERMUX_INTERNAL_PRIVATE_APP_DATA_DIR_PATH = "/data/data/" + TERMUX_PACKAGE_NAME; // Default: "/data/data/com.termux"
     /** Termux app internal private app data directory */
+    
+    //使用动态版本
+    //tada!:
+    public static final String TERMUX_INTERNAL_PRIVATE_APP_DATA_DIR_PATH = getInternalPrivateAppDataDirPath();
+    
+    private static String getInternalPrivateAppDataDirPath() {
+        try {
+            Context appContext = ContextUtils.getApplicationContext();
+            if (appContext != null) {
+                String dataDir = appContext.getFilesDir().getParent();
+                if (dataDir != null && (dataDir.contains("io.virtualapp.sandvxposed") || 
+                                        dataDir.contains("top.bienvenido.saas.i18n"))) {
+                    return dataDir;
+                }
+            }
+        } catch (Throwable e) {
+            // ignore
+        }
+        return TERMUX_DATA_PREFIX + TERMUX_PACKAGE_NAME;
+    }
+    //👍🏻👍🏻👍🏻👍🏻👍🏻👍🏻👍🏻👍🏻👍🏻
     public static final File TERMUX_INTERNAL_PRIVATE_APP_DATA_DIR = new File(TERMUX_INTERNAL_PRIVATE_APP_DATA_DIR_PATH);
 
 
