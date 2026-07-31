@@ -387,13 +387,14 @@ final class TermuxInstaller {
     //new implementation
     public static byte[] loadZipBytes() {
     // 方案 1：优先尝试加载 Native 库（兼容）
-        try {
+    //尝试个屁
+        /*try {
             System.loadLibrary("termux-bootstrap");
             return getZip();
         } catch (UnsatisfiedLinkError e) {
             Logger.logError(LOG_TAG, "Failed to load libtermux-bootstrap, falling back to assets");
         }
-    
+    */
         // 方案 2：从 assets 读取 bootstrap-aarch64.zip（兜底）
         try {
             InputStream is = TermuxInstaller.class.getResourceAsStream("/assets/bootstrap-aarch64.zip");
@@ -412,7 +413,7 @@ final class TermuxInstaller {
             throw new RuntimeException("Failed to load bootstrap from assets", e);
         }
     }
-
+/*
     public static native byte[] getZip();
-
+*/
 }
