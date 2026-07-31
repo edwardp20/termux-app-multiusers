@@ -1023,13 +1023,13 @@ public final class TermuxConstants {
 
 
             /** Intent action to make termux reload its termux session styling */
-            public static final String ACTION_RELOAD_STYLE = "com.termux.app.reload_style"
+            public static final String ACTION_RELOAD_STYLE = "com.termux.app.reload_style";
             /** Intent {@code String} extra for what to reload for the TERMUX_ACTIVITY.ACTION_RELOAD_STYLE intent. This has been deperecated. */
             @Deprecated
             public static final String EXTRA_RELOAD_STYLE = TermuxConstants.TERMUX_PACKAGE_NAME + ".app.reload_style"; // Default: "com.termux.app.reload_style"
 
             /**  Intent {@code boolean} extra for whether to recreate activity for the TERMUX_ACTIVITY.ACTION_RELOAD_STYLE intent. */
-            public static final String EXTRA_RECREATE_ACTIVITY = "com.termux.app.TermuxActivity.EXTRA_RECREATE_ACTIVITY"
+            public static final String EXTRA_RECREATE_ACTIVITY = "com.termux.app.TermuxActivity.EXTRA_RECREATE_ACTIVITY";
             //public static final String EXTRA_RECREATE_ACTIVITY = TERMUX_APP.TERMUX_ACTIVITY_NAME + ".EXTRA_RECREATE_ACTIVITY"; // Default: "com.termux.app.TermuxActivity.EXTRA_RECREATE_ACTIVITY"
 
 
@@ -1058,22 +1058,22 @@ public final class TermuxConstants {
 
             /** Intent action to stop TERMUX_SERVICE */
             //public static final String ACTION_STOP_SERVICE = TERMUX_PACKAGE_NAME + ".service_stop"; // Default: "com.termux.service_stop"
-            public static final String ACTION_STOP_SERVICE = "com.termux.service_stop"
+            public static final String ACTION_STOP_SERVICE = "com.termux.service_stop";
 
 
             /** Intent action to make TERMUX_SERVICE acquire a wakelock */
-            public static final String ACTION_WAKE_LOCK = "com.termux.service_wake_lock"
+            public static final String ACTION_WAKE_LOCK = "com.termux.service_wake_lock";
             //public static final String ACTION_WAKE_LOCK = TERMUX_PACKAGE_NAME + ".service_wake_lock"; // Default: "com.termux.service_wake_lock"
 
 
             /** Intent action to make TERMUX_SERVICE release wakelock */
-            public static final String ACTION_WAKE_UNLOCK = "com.termux.service_wake_unlock"
+            public static final String ACTION_WAKE_UNLOCK = "com.termux.service_wake_unlock";
             //public static final String ACTION_WAKE_UNLOCK = TERMUX_PACKAGE_NAME + ".service_wake_unlock"; // Default: "com.termux.service_wake_unlock"
 
 
             /** Intent action to execute command with TERMUX_SERVICE */
             //public static final String ACTION_SERVICE_EXECUTE = TERMUX_PACKAGE_NAME + ".service_execute"; // Default: "com.termux.service_execute"
-            public static final String ACTION_SERVICE_EXECUTE = "com.termux.service_execute"
+            public static final String ACTION_SERVICE_EXECUTE = "com.termux.service_execute";
 
             /** Uri scheme for paths sent via intent to TERMUX_SERVICE */
             public static final String URI_SCHEME_SERVICE_EXECUTE = TERMUX_PACKAGE_NAME + ".file"; // Default: "com.termux.file"
