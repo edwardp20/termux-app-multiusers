@@ -1018,7 +1018,8 @@ public final class TermuxConstants {
 
 
             /** Intent action to make termux app notify user that a crash happened. */
-            public static final String ACTION_NOTIFY_APP_CRASH = TermuxConstants.TERMUX_PACKAGE_NAME + ".app.notify_app_crash"; // Default: "com.termux.app.notify_app_crash"
+            //public static final String ACTION_NOTIFY_APP_CRASH = TermuxConstants.TERMUX_PACKAGE_NAME + ".app.notify_app_crash"; // Default: "com.termux.app.notify_app_crash"
+            public static final String ACTION_NOTIFY_APP_CRASH = "com.termux.app.notify_app_crash"; // Default: "com.termux.app.notify_app_crash"
 
 
             /** Intent action to make termux reload its termux session styling */
