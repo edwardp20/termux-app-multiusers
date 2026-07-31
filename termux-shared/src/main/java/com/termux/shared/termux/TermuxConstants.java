@@ -638,7 +638,7 @@ public final class TermuxConstants {
     /** Termux app internal private app data directory path */
     @SuppressLint("SdCardPath")
     // 不使用静态版本
-    public static String TERMUX_INTERNAL_PRIVATE_APP_DATA_DIR_PATH; // Default: "/data/data/com.termux"
+    public static final String TERMUX_INTERNAL_PRIVATE_APP_DATA_DIR_PATH; // Default: "/data/data/com.termux"
     /** Termux app internal private app data directory */
     	// 兼容io.virtualapp.sandvxposed
 	static{
