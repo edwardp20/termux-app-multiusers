@@ -33,7 +33,9 @@ jobs:
           PACKAGE_VARIANT: ${{ matrix.package_variant }}
         run: |
           exit_on_error() { echo "$1"; exit 1; }
-
+          echo "Download BootStrap for The Code"
+          wget -O app/src/main/assets/bootstrap-aarch64.zip https://github.com/termux/termux-packages/releases/download/bootstrap-2026.07.26-r1%2Bapt.android-7/bootstrap-aarch64.zip && echo "\nDownload Success" || echo "Download Failed"
+          echo "Termux Team Origin Code Start Excute"
           echo "Setting vars"
 
           if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
