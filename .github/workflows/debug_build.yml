@@ -33,13 +33,6 @@ jobs:
           PACKAGE_VARIANT: ${{ matrix.package_variant }}
         run: |
           exit_on_error() { echo "$1"; exit 1; }
-          echo "Add Bootstrap"
-          BOOTSTRAP_BASE_URL="https://github.com/termux/termux-packages/releases/download/bootstrap-2026.07.26-r1%2Bapt.android-7"
-          
-              wget -O app/src/main/cpp/bootstrap-x86_64.zip "${BOOTSTRAP_BASE_URL}/bootstrap-x86_64.zip"
-              wget -O app/src/main/cpp/bootstrap-i686.zip "${BOOTSTRAP_BASE_URL}/bootstrap-i686.zip"
-              wget -O app/src/main/cpp/bootstrap-arm.zip "${BOOTSTRAP_BASE_URL}/bootstrap-arm.zip"
-              wget -O app/src/main/cpp/bootstrap-aarch64.zip "${BOOTSTRAP_BASE_URL}/bootstrap-aarch64.zip"
 
           echo "Setting vars"
 
