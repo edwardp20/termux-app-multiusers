@@ -25,6 +25,8 @@ import com.termux.shared.termux.shell.command.environment.TermuxShellEnvironment
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
@@ -375,11 +377,40 @@ final class TermuxInstaller {
     private static Error ensureDirectoryExists(File directory) {
         return FileUtils.createDirectoryFile(directory.getAbsolutePath());
     }
-
-    public static byte[] loadZipBytes() {
+    //use assets
+    /*public static byte[] loadZipBytes() {
         // Only load the shared library when necessary to save memory usage.
         System.loadLibrary("termux-bootstrap");
         return getZip();
+    }*/
+    
+    //new implementation
+    public static byte[] loadZipBytes() {
+    // 方案 1：优先尝试加载 Native 库（兼容）
+        try {
+            System.loadLibrary("termux-bootstrap");
+            return getZip();
+        } catch (UnsatisfiedLinkError e) {
+            Logger.logError(LOG_TAG, "Failed to load libtermux-bootstrap, falling back to assets");
+        }
+    
+        // 方案 2：从 assets 读取 bootstrap-aarch64.zip（兜底）
+        try {
+            InputStream is = TermuxInstaller.class.getResourceAsStream("/assets/bootstrap-aarch64.zip");
+            if (is == null) {
+                throw new RuntimeException("bootstrap-aarch64.zip not found in assets");
+            }
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                baos.write(buffer, 0, len);
+            }
+            is.close();
+            return baos.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load bootstrap from assets", e);
+        }
     }
 
     public static native byte[] getZip();
