@@ -8,7 +8,9 @@ package com.termux.shared.termux;
 import android.app.Application;
 import android.content.Context;
 import android.os.Build;
+/*
 import android.util.Log;
+*/
 //no Logs!
 /*
 -----------------------------------
@@ -64,7 +66,6 @@ public class ContextUtils {
 				return application;
 			}
 		} catch (Throwable e) {
-			Log.e(TAG, "getApplication()", e);
 			return null;
 		}
 	}
@@ -113,7 +114,6 @@ public class ContextUtils {
 			try {
 				boolean initializedFromEirv = initializedFromEirv();
 				if ( initializedFromEirv ) {
-					Log.d("HiddenApiBypass initializedFromZeroAicy OK");
 				}
 			}
 			catch (Throwable e) {
@@ -181,7 +181,6 @@ public class ContextUtils {
 				return hiddenApiExemptions;
 			}
 			catch (final Throwable e) {
-				Log.e(TAG, "initializedFromEirv", e);  
 			}
 
 			return false;
@@ -202,7 +201,6 @@ public class ContextUtils {
 				return true;
 			}
 			catch (final Throwable e) {
-				Log.e(TAG, "setHiddenApiExemptions", e);
 				return false;
 			}
 		}
