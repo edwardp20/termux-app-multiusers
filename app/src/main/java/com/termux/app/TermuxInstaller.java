@@ -65,17 +65,21 @@ final class TermuxInstaller {
 
     /** Performs bootstrap setup if necessary. */
     static void setupBootstrapIfNeeded(final Activity activity, final Runnable whenDone) {
+        DebugLogger.log("TermuxInstaller", "=== setupBootstrapIfNeeded() START ===");
+        
         String bootstrapErrorMessage;
         Error filesDirectoryAccessibleError;
-
+    
         // This will also call Context.getFilesDir(), which should ensure that termux files directory
         // is created if it does not already exist
+        DebugLogger.log("TermuxInstaller", "Checking if Termux files directory is accessible...");
         filesDirectoryAccessibleError = TermuxFileUtils.isTermuxFilesDirectoryAccessible(activity, true, true);
         boolean isFilesDirectoryAccessible = filesDirectoryAccessibleError == null;
-
+        DebugLogger.log("TermuxInstaller", "isFilesDirectoryAccessible: " + isFilesDirectoryAccessible);
+    
         // Termux can only be run as the primary user (device owner) since only that
         // account has the expected file system paths. Verify that:
-        //解除限制
+        // 解除限制
         /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && !PackageUtils.isCurrentUserThePrimaryUser(activity)) {
             bootstrapErrorMessage = activity.getString(R.string.bootstrap_error_not_primary_user_message,
                 MarkdownUtils.getMarkdownCodeForString(TERMUX_PREFIX_DIR_PATH, false));
@@ -87,8 +91,9 @@ final class TermuxInstaller {
                 bootstrapErrorMessage);
             return;
         }*/
-
+    
         if (!isFilesDirectoryAccessible) {
+            DebugLogger.log("TermuxInstaller", "ERROR: Files directory not accessible!");
             bootstrapErrorMessage = Error.getMinimalErrorString(filesDirectoryAccessibleError);
             //noinspection SdCardPath
             if (PackageUtils.isAppInstalledOnExternalStorage(activity) &&
@@ -96,7 +101,7 @@ final class TermuxInstaller {
                 bootstrapErrorMessage += "\n\n" + activity.getString(R.string.bootstrap_error_installed_on_portable_sd,
                     MarkdownUtils.getMarkdownCodeForString(TERMUX_PREFIX_DIR_PATH, false));
             }
-
+    
             Logger.logError(LOG_TAG, bootstrapErrorMessage);
             sendBootstrapCrashReportNotification(activity, bootstrapErrorMessage);
             MessageDialogUtils.showMessage(activity,
@@ -104,131 +109,197 @@ final class TermuxInstaller {
                 bootstrapErrorMessage, null);
             return;
         }
-
+    
         // If prefix directory exists, even if its a symlink to a valid directory and symlink is not broken/dangling
+        DebugLogger.log("TermuxInstaller", "Checking if prefix directory exists: " + TERMUX_PREFIX_DIR_PATH);
         if (FileUtils.directoryFileExists(TERMUX_PREFIX_DIR_PATH, true)) {
+            DebugLogger.log("TermuxInstaller", "Prefix directory exists.");
             if (TermuxFileUtils.isTermuxPrefixDirectoryEmpty()) {
+                DebugLogger.log("TermuxInstaller", "Prefix directory exists but is EMPTY. Will reinstall.");
                 Logger.logInfo(LOG_TAG, "The termux prefix directory \"" + TERMUX_PREFIX_DIR_PATH + "\" exists but is empty or only contains specific unimportant files.");
             } else {
+                DebugLogger.log("TermuxInstaller", "Prefix directory is NOT empty. Bootstrap already installed.");
                 whenDone.run();
                 return;
             }
         } else if (FileUtils.fileExists(TERMUX_PREFIX_DIR_PATH, false)) {
+            DebugLogger.log("TermuxInstaller", "A file exists at prefix path (not a directory).");
             Logger.logInfo(LOG_TAG, "The termux prefix directory \"" + TERMUX_PREFIX_DIR_PATH + "\" does not exist but another file exists at its destination.");
         }
-
+    
+        DebugLogger.log("TermuxInstaller", "Starting bootstrap installation process...");
+        
         final ProgressDialog progress = ProgressDialog.show(activity, null, activity.getString(R.string.bootstrap_installer_body), true, false);
         new Thread() {
             @Override
             public void run() {
                 try {
+                    DebugLogger.log("TermuxInstaller", "Thread started. Installing " + TermuxConstants.TERMUX_APP_NAME + " bootstrap packages.");
                     Logger.logInfo(LOG_TAG, "Installing " + TermuxConstants.TERMUX_APP_NAME + " bootstrap packages.");
-
+    
                     Error error;
-
+    
                     // Delete prefix staging directory or any file at its destination
+                    DebugLogger.log("TermuxInstaller", "Deleting staging directory: " + TERMUX_STAGING_PREFIX_DIR_PATH);
                     error = FileUtils.deleteFile("termux prefix staging directory", TERMUX_STAGING_PREFIX_DIR_PATH, true);
                     if (error != null) {
+                        DebugLogger.log("TermuxInstaller", "ERROR: Failed to delete staging directory: " + Error.getErrorMarkdownString(error));
                         showBootstrapErrorDialog(activity, whenDone, Error.getErrorMarkdownString(error));
                         return;
                     }
-
+    
                     // Delete prefix directory or any file at its destination
+                    DebugLogger.log("TermuxInstaller", "Deleting prefix directory: " + TERMUX_PREFIX_DIR_PATH);
                     error = FileUtils.deleteFile("termux prefix directory", TERMUX_PREFIX_DIR_PATH, true);
                     if (error != null) {
+                        DebugLogger.log("TermuxInstaller", "ERROR: Failed to delete prefix directory: " + Error.getErrorMarkdownString(error));
                         showBootstrapErrorDialog(activity, whenDone, Error.getErrorMarkdownString(error));
                         return;
                     }
-
+    
                     // Create prefix staging directory if it does not already exist and set required permissions
+                    DebugLogger.log("TermuxInstaller", "Creating staging directory...");
                     error = TermuxFileUtils.isTermuxPrefixStagingDirectoryAccessible(true, true);
                     if (error != null) {
+                        DebugLogger.log("TermuxInstaller", "ERROR: Failed to create staging directory: " + Error.getErrorMarkdownString(error));
                         showBootstrapErrorDialog(activity, whenDone, Error.getErrorMarkdownString(error));
                         return;
                     }
-
+    
                     // Create prefix directory if it does not already exist and set required permissions
+                    DebugLogger.log("TermuxInstaller", "Creating prefix directory...");
                     error = TermuxFileUtils.isTermuxPrefixDirectoryAccessible(true, true);
                     if (error != null) {
+                        DebugLogger.log("TermuxInstaller", "ERROR: Failed to create prefix directory: " + Error.getErrorMarkdownString(error));
                         showBootstrapErrorDialog(activity, whenDone, Error.getErrorMarkdownString(error));
                         return;
                     }
-
+    
+                    DebugLogger.log("TermuxInstaller", "Extracting bootstrap zip to prefix staging directory \"" + TERMUX_STAGING_PREFIX_DIR_PATH + "\".");
                     Logger.logInfo(LOG_TAG, "Extracting bootstrap zip to prefix staging directory \"" + TERMUX_STAGING_PREFIX_DIR_PATH + "\".");
-
+    
                     final byte[] buffer = new byte[8096];
                     final List<Pair<String, String>> symlinks = new ArrayList<>(50);
-
+    
+                    DebugLogger.log("TermuxInstaller", "Calling loadZipBytes()...");
                     final byte[] zipBytes = loadZipBytes();
+                    DebugLogger.log("TermuxInstaller", "loadZipBytes() returned " + (zipBytes == null ? "NULL" : zipBytes.length + " bytes"));
+                    
+                    if (zipBytes == null || zipBytes.length == 0) {
+                        DebugLogger.log("TermuxInstaller", "ERROR: zipBytes is null or empty!");
+                        throw new RuntimeException("loadZipBytes() returned empty data");
+                    }
+                    
+                    DebugLogger.log("TermuxInstaller", "Creating ZipInputStream...");
                     try (ZipInputStream zipInput = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
                         ZipEntry zipEntry;
+                        int entryCount = 0;
+                        int fileCount = 0;
+                        int symlinkCount = 0;
+                        
+                        DebugLogger.log("TermuxInstaller", "Starting to iterate zip entries...");
+                        
                         while ((zipEntry = zipInput.getNextEntry()) != null) {
+                            entryCount++;
+                            String entryName = zipEntry.getName();
+                            DebugLogger.log("TermuxInstaller", "Entry " + entryCount + ": " + entryName);
+                            
                             if (zipEntry.getName().equals("SYMLINKS.txt")) {
+                                DebugLogger.log("TermuxInstaller", "Found SYMLINKS.txt, processing symlinks...");
                                 BufferedReader symlinksReader = new BufferedReader(new InputStreamReader(zipInput));
                                 String line;
                                 while ((line = symlinksReader.readLine()) != null) {
                                     String[] parts = line.split("←");
-                                    if (parts.length != 2)
+                                    if (parts.length != 2) {
+                                        DebugLogger.log("TermuxInstaller", "Malformed symlink line: " + line);
                                         throw new RuntimeException("Malformed symlink line: " + line);
+                                    }
                                     String oldPath = parts[0];
                                     String newPath = TERMUX_STAGING_PREFIX_DIR_PATH + "/" + parts[1];
                                     symlinks.add(Pair.create(oldPath, newPath));
-
+                                    symlinkCount++;
+                                    DebugLogger.log("TermuxInstaller", "  Symlink " + symlinkCount + ": " + oldPath + " ← " + newPath);
+    
                                     error = ensureDirectoryExists(new File(newPath).getParentFile());
                                     if (error != null) {
+                                        DebugLogger.log("TermuxInstaller", "ERROR: ensureDirectoryExists failed for " + newPath);
                                         showBootstrapErrorDialog(activity, whenDone, Error.getErrorMarkdownString(error));
                                         return;
                                     }
                                 }
+                                DebugLogger.log("TermuxInstaller", "SYMLINKS.txt processed, " + symlinkCount + " symlinks found.");
                             } else {
                                 String zipEntryName = zipEntry.getName();
                                 File targetFile = new File(TERMUX_STAGING_PREFIX_DIR_PATH, zipEntryName);
                                 boolean isDirectory = zipEntry.isDirectory();
-
+    
+                                DebugLogger.log("TermuxInstaller", "  " + (isDirectory ? "DIR" : "FILE") + ": " + zipEntryName);
+                                
                                 error = ensureDirectoryExists(isDirectory ? targetFile : targetFile.getParentFile());
                                 if (error != null) {
+                                    DebugLogger.log("TermuxInstaller", "ERROR: ensureDirectoryExists failed for " + targetFile.getAbsolutePath());
                                     showBootstrapErrorDialog(activity, whenDone, Error.getErrorMarkdownString(error));
                                     return;
                                 }
-
+    
                                 if (!isDirectory) {
                                     try (FileOutputStream outStream = new FileOutputStream(targetFile)) {
                                         int readBytes;
-                                        while ((readBytes = zipInput.read(buffer)) != -1)
+                                        while ((readBytes = zipInput.read(buffer)) != -1) {
                                             outStream.write(buffer, 0, readBytes);
+                                        }
                                     }
+                                    fileCount++;
+                                    DebugLogger.log("TermuxInstaller", "    Written: " + targetFile.getAbsolutePath() + " (" + targetFile.length() + " bytes)");
+                                    
                                     if (zipEntryName.startsWith("bin/") || zipEntryName.startsWith("libexec") ||
                                         zipEntryName.startsWith("lib/apt/apt-helper") || zipEntryName.startsWith("lib/apt/methods")) {
                                         //noinspection OctalInteger
                                         Os.chmod(targetFile.getAbsolutePath(), 0700);
+                                        DebugLogger.log("TermuxInstaller", "    chmod 0700: " + targetFile.getAbsolutePath());
                                     }
                                 }
                             }
                         }
+                        
+                        DebugLogger.log("TermuxInstaller", "=== Zip iteration complete ===");
+                        DebugLogger.log("TermuxInstaller", "Total entries: " + entryCount + ", Files extracted: " + fileCount + ", Symlinks: " + symlinkCount);
                     }
-
-                    if (symlinks.isEmpty())
+    
+                    if (symlinks.isEmpty()) {
+                        DebugLogger.log("TermuxInstaller", "ERROR: No SYMLINKS.txt encountered!");
                         throw new RuntimeException("No SYMLINKS.txt encountered");
+                    }
+                    
+                    DebugLogger.log("TermuxInstaller", "Creating " + symlinks.size() + " symlinks...");
                     for (Pair<String, String> symlink : symlinks) {
+                        DebugLogger.log("TermuxInstaller", "  Creating symlink: " + symlink.second + " -> " + symlink.first);
                         Os.symlink(symlink.first, symlink.second);
                     }
-
+    
+                    DebugLogger.log("TermuxInstaller", "Moving staging to prefix: " + TERMUX_STAGING_PREFIX_DIR + " -> " + TERMUX_PREFIX_DIR);
                     Logger.logInfo(LOG_TAG, "Moving termux prefix staging to prefix directory.");
-
+    
                     if (!TERMUX_STAGING_PREFIX_DIR.renameTo(TERMUX_PREFIX_DIR)) {
+                        DebugLogger.log("TermuxInstaller", "ERROR: renameTo() failed!");
                         throw new RuntimeException("Moving termux prefix staging to prefix directory failed");
                     }
-
+    
+                    DebugLogger.log("TermuxInstaller", "SUCCESS: Bootstrap packages installed successfully!");
                     Logger.logInfo(LOG_TAG, "Bootstrap packages installed successfully.");
-
+    
                     // Recreate env file since termux prefix was wiped earlier
+                    DebugLogger.log("TermuxInstaller", "Writing environment file...");
                     TermuxShellEnvironment.writeEnvironmentToFile(activity);
-
+    
+                    DebugLogger.log("TermuxInstaller", "Calling whenDone.run()...");
                     activity.runOnUiThread(whenDone);
-
+    
                 } catch (final Exception e) {
+                    DebugLogger.log("TermuxInstaller", "EXCEPTION: " + e.getMessage());
+                    e.printStackTrace();
                     showBootstrapErrorDialog(activity, whenDone, Logger.getStackTracesMarkdownString(null, Logger.getStackTracesStringArray(e)));
-
+    
                 } finally {
                     activity.runOnUiThread(() -> {
                         try {
@@ -385,7 +456,7 @@ final class TermuxInstaller {
     }*/
     
     //new implementation
-    public static byte[] loadZipBytes() {
+    /*public static byte[] loadZipBytes() {
     // 方案 1：优先尝试加载 Native 库（兼容）
     //尝试个屁
         /*try {
@@ -394,7 +465,7 @@ final class TermuxInstaller {
         } catch (UnsatisfiedLinkError e) {
             Logger.logError(LOG_TAG, "Failed to load libtermux-bootstrap, falling back to assets");
         }
-    */
+    
         // 方案 2：从 assets 读取 bootstrap-aarch64.zip（兜底）
         try {
             InputStream is = TermuxInstaller.class.getResourceAsStream("/assets/bootstrap-aarch64.zip");
@@ -410,6 +481,35 @@ final class TermuxInstaller {
             is.close();
             return baos.toByteArray();
         } catch (Exception e) {
+            throw new RuntimeException("Failed to load bootstrap from assets", e);
+        }
+    }*/
+    public static byte[] loadZipBytes() {
+        DebugLogger.log("TermuxInstaller", "=== loadZipBytes() START ===");
+        
+        try {
+            DebugLogger.log("TermuxInstaller", "Reading assets/bootstrap-aarch64.zip");
+            InputStream is = TermuxInstaller.class.getResourceAsStream("/assets/bootstrap-aarch64.zip");
+            
+            if (is == null) {
+                DebugLogger.log("TermuxInstaller", "ERROR: bootstrap-aarch64.zip NOT FOUND in assets");
+                throw new RuntimeException("bootstrap-aarch64.zip not found in assets");
+            }
+            
+            DebugLogger.log("TermuxInstaller", "bootstrap-aarch64.zip found, reading...");
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                baos.write(buffer, 0, len);
+            }
+            is.close();
+            
+            DebugLogger.log("TermuxInstaller", "SUCCESS: read " + baos.size() + " bytes");
+            return baos.toByteArray();
+            
+        } catch (Exception e) {
+            DebugLogger.log("TermuxInstaller", "ERROR: " + e.getMessage());
             throw new RuntimeException("Failed to load bootstrap from assets", e);
         }
     }
